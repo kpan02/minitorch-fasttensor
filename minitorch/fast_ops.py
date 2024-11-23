@@ -30,6 +30,7 @@ Fn = TypeVar("Fn")
 
 
 def njit(fn: Fn, **kwargs: Any) -> Fn:
+    """Decorator that JIT compiles a function to run on CPU."""
     return _njit(inline="always", **kwargs)(fn)  # type: ignore
 
 
@@ -168,23 +169,6 @@ def tensor_map(
         in_shape: Shape,
         in_strides: Strides,
     ) -> None:
-        """Apply a unary function to each element in the input tensor and store result in output tensor.
-
-        Args:
-        ----
-            out: Output storage array
-            out_shape: Shape of output tensor
-            out_strides: Strides of output tensor
-            in_storage: Input storage array
-            in_shape: Shape of input tensor
-            in_strides: Strides of input tensor
-
-        Optimizations:
-        - Uses parallel processing with prange
-        - Avoids indexing when strides match
-        - Uses numpy arrays for indices
-
-        """
         strides_match = np.array_equal(in_strides, out_strides)
         size = int(np.prod(out_shape))
 
@@ -238,26 +222,6 @@ def tensor_zip(
         b_shape: Shape,
         b_strides: Strides,
     ) -> None:
-        """Apply a binary function elementwise to two input tensors and store result in output tensor.
-
-        Args:
-        ----
-            out: Output storage array
-            out_shape: Shape of output tensor
-            out_strides: Strides of output tensor
-            a_storage: First input storage array
-            a_shape: Shape of first input tensor
-            a_strides: Strides of first input tensor
-            b_storage: Second input storage array
-            b_shape: Shape of second input tensor
-            b_strides: Strides of second input tensor
-
-        Optimizations:
-        - Uses parallel processing with prange
-        - Avoids indexing when strides match and shapes match
-        - Uses numpy arrays for indices when broadcasting needed
-
-        """
         strides_match = np.array_equal(a_strides, out_strides) and np.array_equal(
             b_strides, out_strides
         )
@@ -312,26 +276,6 @@ def tensor_reduce(
         a_strides: Strides,
         reduce_dim: int,
     ) -> None:
-        """NUMBA tensor reduce inner loop function.
-
-        This function performs the reduction operation along a specified dimension.
-
-        Args:
-        ----
-            out (Storage): Output storage buffer
-            out_shape (Shape): Shape of output tensor
-            out_strides (Strides): Strides of output tensor
-            a_storage (Storage): Storage of input tensor
-            a_shape (Shape): Shape of input tensor
-            a_strides (Strides): Strides of input tensor
-            reduce_dim (int): Dimension to reduce along
-
-        Optimizations:
-        * Parallel outer loop
-        * Inner loop reduction
-        * Index buffers using numpy arrays
-
-        """
         size = int(np.prod(out_shape))
         reduce_size = a_shape[reduce_dim]
 

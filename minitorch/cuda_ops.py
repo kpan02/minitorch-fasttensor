@@ -335,7 +335,7 @@ def tensor_reduce(
             if pos < reduce_size:
                 out_index[reduce_dim] = pos
                 a_pos = index_to_position(out_index, a_strides)
-                cache[pos] = a_storage[in_pos]
+                cache[pos] = a_storage[a_pos]
             cuda.syncthreads()
 
             step = BLOCK_DIM // 2

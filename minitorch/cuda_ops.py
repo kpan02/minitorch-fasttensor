@@ -30,10 +30,28 @@ Fn = TypeVar("Fn")
 
 
 def device_jit(fn: Fn, **kwargs) -> Fn:
+    """Decorator that JIT compiles a function to run on CUDA device.
+    
+    Args:
+        fn (Fn): Function to compile
+        **kwargs: Additional arguments to pass to numba.cuda.jit
+        
+    Returns:
+        Fn: Compiled device function
+    """
     return _jit(device=True, **kwargs)(fn)  # type: ignore
 
 
 def jit(fn, **kwargs) -> FakeCUDAKernel:
+    """Decorator that JIT compiles a function to run on CUDA.
+    
+    Args:
+        fn: Function to compile
+        **kwargs: Additional arguments to pass to numba.cuda.jit
+        
+    Returns:
+        FakeCUDAKernel: Compiled CUDA kernel
+    """
     return _jit(**kwargs)(fn)  # type: ignore
 
 
@@ -396,7 +414,7 @@ def _mm_practice(out: Storage, a: Storage, b: Storage, size: int) -> None:
 
         output = 0.0
         for k in range(size):
-            out_val += a_cache[i, k] * b_cache[k, j]
+            output += a_cache[i, k] * b_cache[k, j]
 
         out[size * i + j] = output
 
@@ -467,21 +485,28 @@ def _tensor_matrix_multiply(
     #    b) Copy into shared memory for b matrix
     #    c) Compute the dot produce for position c[i, j]
     # TODO: Implement for Task 3.4.
-    
+
     acc = 0
     size = a_shape[-1]
 
     for x in range((size + BLOCK_DIM - 1) // BLOCK_DIM):
-        
         # Copy into shared memory for a matrix.
         if i < out_shape[-2] and x * BLOCK_DIM + pj < a_shape[-1]:
-            a_shared[pi, pj] = a_storage[batch * a_batch_stride + i * a_strides[-2] + (x * BLOCK_DIM + pj) * a_strides[-1]]
+            a_shared[pi, pj] = a_storage[
+                batch * a_batch_stride
+                + i * a_strides[-2]
+                + (x * BLOCK_DIM + pj) * a_strides[-1]
+            ]
         else:
             a_shared[pi, pj] = 0.0
 
         # Copy into shared memory for b matrix
         if x * BLOCK_DIM + pi < b_shape[-2] and j < out_shape[-1]:
-            b_shared[pi, pj] = b_storage[batch * b_batch_stride + (x * BLOCK_DIM + pi) * b_strides[-2] + j * b_strides[-1]]
+            b_shared[pi, pj] = b_storage[
+                batch * b_batch_stride
+                + (x * BLOCK_DIM + pi) * b_strides[-2]
+                + j * b_strides[-1]
+            ]
         else:
             b_shared[pi, pj] = 0.0
 
@@ -497,5 +522,6 @@ def _tensor_matrix_multiply(
     if i < out_shape[-2] and j < out_shape[-1]:
         out_pos = batch * out_strides[0] + i * out_strides[-2] + j * out_strides[-1]
         out[out_pos] = acc
+
 
 tensor_matrix_multiply = jit(_tensor_matrix_multiply)

@@ -40,7 +40,7 @@ The files that will be synced are:
 ```
 (.venv) C:\Users\Owner\MLEworkspace\mod3-kpan02>python project/parallel_check.py
 MAP
- 
+
 ================================================================================
  Parallel Accelerator Optimizing:  Function tensor_map.<locals>._map,
 C:\Users\Owner\MLEworkspace\mod3-kpan02\minitorch\fast_ops.py (164)
@@ -123,7 +123,7 @@ executed and reused inside the loop):
     - numpy.empty() is used for the allocation.
 None
 ZIP
- 
+
 ================================================================================
  Parallel Accelerator Optimizing:  Function tensor_zip.<locals>._zip,
 C:\Users\Owner\MLEworkspace\mod3-kpan02\minitorch\fast_ops.py (214)
@@ -222,7 +222,7 @@ executed and reused inside the loop):
     - numpy.empty() is used for the allocation.
 None
 REDUCE
- 
+
 ================================================================================
  Parallel Accelerator Optimizing:  Function tensor_reduce.<locals>._reduce,
 C:\Users\Owner\MLEworkspace\mod3-kpan02\minitorch\fast_ops.py (270)
@@ -288,13 +288,13 @@ part of the larger parallel loop (#12).
 Allocation hoisting:
 The memory allocation derived from the instruction at
 C:\Users\Owner\MLEworkspace\mod3-kpan02\minitorch\fast_ops.py (283) is hoisted
-out of the parallel loop labelled #12 (it will be performed before the loop is 
+out of the parallel loop labelled #12 (it will be performed before the loop is
 executed and reused inside the loop):
    Allocation:: out_index: Index = np.zeros(MAX_DIMS, np.int32)
     - numpy.empty() is used for the allocation.
 None
 MATRIX MULTIPLY
- 
+
 ================================================================================
  Parallel Accelerator Optimizing:  Function _tensor_matrix_multiply,
 C:\Users\Owner\MLEworkspace\mod3-kpan02\minitorch\fast_ops.py (294)

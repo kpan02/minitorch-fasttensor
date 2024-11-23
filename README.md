@@ -382,3 +382,27 @@ No allocation hoisting found
 None
 ```
 </details>
+
+---
+
+# 3.4 Comparison Graph
+```
+Timing summary
+Size: 64
+    fast: 0.00288
+    gpu: 0.00607
+Size: 128
+    fast: 0.01536
+    gpu: 0.0112
+Size: 256
+    fast: 0.08769
+    gpu: 0.04953
+Size: 512
+    fast: 1.25781
+    gpu: 0.26183
+Size: 1024
+    fast: 12.62239
+    gpu: 0.90193
+```
+
+![Alt Text](images/graph.png)

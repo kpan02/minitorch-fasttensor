@@ -10,7 +10,6 @@ import numpy.typing as npt
 from numpy import array, float64
 from typing_extensions import TypeAlias
 
-
 from .operators import prod
 
 MAX_DIMS = 32
@@ -47,11 +46,10 @@ def index_to_position(index: Index, strides: Strides) -> int:
         Position in storage
 
     """
-    pos = 0
-    for i, stride in zip(index, strides):
-        pos += i * stride
-
-    return pos
+    position = 0
+    for ind, stride in zip(index, strides):
+        position += ind * stride
+    return position
 
 
 def to_index(ordinal: int, shape: Shape, out_index: OutIndex) -> None:
@@ -69,8 +67,13 @@ def to_index(ordinal: int, shape: Shape, out_index: OutIndex) -> None:
     """
     cur_ord = ordinal + 0
     for i in range(len(shape) - 1, -1, -1):
-        out_index[i] = int(cur_ord % shape[i])
-        cur_ord = cur_ord // shape[i]
+        sh = shape[i]
+        out_index[i] = int(cur_ord % sh)
+        cur_ord = cur_ord // sh
+
+    #     # same.append(int(total_size))
+    # print(shape)
+    # print(strides,  same )
 
 
 def broadcast_index(
@@ -94,11 +97,14 @@ def broadcast_index(
         None
 
     """
+    # print("big_shape", big_shape)
+
     for i, s in enumerate(shape):
         if s > 1:
             out_index[i] = big_index[i + (len(big_shape) - len(shape))]
         else:
             out_index[i] = 0
+    return None
 
 
 def shape_broadcast(shape1: UserShape, shape2: UserShape) -> UserShape:
@@ -118,15 +124,23 @@ def shape_broadcast(shape1: UserShape, shape2: UserShape) -> UserShape:
         IndexingError : if cannot broadcast
 
     """
-    if len(shape2) > len(shape1):
-        shape1, shape2 = shape2, shape1
-    shape = list(shape1)
-    for i in range(1, len(shape2) + 1):
-        if shape1[-i] == 1 or shape2[-i] == 1:
-            shape[-i] = max(shape1[-i], shape2[-i])
-        elif shape1[-i] != shape2[-i]:
-            raise IndexingError(f"{shape1} doesn't match {shape2}")
-    return tuple(shape)
+    a, b = shape1, shape2
+    m = max(len(a), len(b))
+    c_rev = [0] * m
+    a_rev = list(reversed(a))
+    b_rev = list(reversed(b))
+    for i in range(m):
+        if i >= len(a):
+            c_rev[i] = b_rev[i]
+        elif i >= len(b):
+            c_rev[i] = a_rev[i]
+        else:
+            c_rev[i] = max(a_rev[i], b_rev[i])
+            if a_rev[i] != c_rev[i] and a_rev[i] != 1:
+                raise IndexingError(f"Broadcast failure {a} {b}")
+            if b_rev[i] != c_rev[i] and b_rev[i] != 1:
+                raise IndexingError(f"Broadcast failure {a} {b}")
+    return tuple(reversed(c_rev))
 
 
 def strides_from_shape(shape: UserShape) -> UserStrides:
@@ -195,11 +209,34 @@ class TensorData:
 
     @staticmethod
     def shape_broadcast(shape_a: UserShape, shape_b: UserShape) -> UserShape:
-        """Broadcast two shapes to create a new union shape."""
+        """Broadcast the shapes of two tensors.
+
+        This function broadcasts the shapes of two tensors `shape_a` and `shape_b` to a common shape.
+
+        Args:
+        ----
+            shape_a (UserShape): The shape of the first tensor.
+            shape_b (UserShape): The shape of the second tensor.
+
+        Returns:
+        -------
+            UserShape: The broadcasted shape of the two tensors.
+
+        """
         return shape_broadcast(shape_a, shape_b)
 
     def index(self, index: Union[int, UserIndex]) -> int:
-        """Convert an index to a single-dimensional storage index."""
+        """Converts the given index to a position in the tensor's storage.
+
+        Args:
+        ----
+            index (Union[int, UserIndex]): The index to convert. Can be an integer for 1D tensors or a tuple of integers for higher-dimensional tensors.
+
+        Returns:
+        -------
+            int: The position in the tensor's storage corresponding to the given index.
+
+        """
         if isinstance(index, int):
             aindex: Index = array([index])
         else:  # if isinstance(index, tuple):
@@ -223,7 +260,13 @@ class TensorData:
         return index_to_position(array(index), self._strides)
 
     def indices(self) -> Iterable[UserIndex]:
-        """Generate all possible indices for the tensor."""
+        """Generate all the indices of the tensor.
+
+        Returns
+        -------
+            Iterable[UserIndex] : All the indices of the tensor.
+
+        """
         lshape: Shape = array(self.shape)
         out_index: Index = array(self.shape)
         for i in range(self.size):
@@ -235,12 +278,29 @@ class TensorData:
         return tuple((random.randint(0, s - 1) for s in self.shape))
 
     def get(self, key: UserIndex) -> float:
-        """Return the value at the specified index."""
+        """Retrieves the value at the specified index from the tensor.
+
+        Args:
+        ----
+            key (UserIndex): The index at which to retrieve the value.
+
+        Returns:
+        -------
+            float: The value at the specified index.
+
+        """
         x: float = self._storage[self.index(key)]
         return x
 
     def set(self, key: UserIndex, val: float) -> None:
-        """Set the value at the specified index."""
+        """Sets the value at the specified index to the given value.
+
+        Args:
+        ----
+            key (UserIndex): The index at which to set the value.
+            val (float): The value to set at the specified index.
+
+        """
         self._storage[self.index(key)] = val
 
     def tuple(self) -> Tuple[Storage, Shape, Strides]:
@@ -261,12 +321,13 @@ class TensorData:
         """
         assert list(sorted(order)) == list(
             range(len(self.shape))
-        ), f"Must give a position to each dimension. Shape: {self.shape} Order: {order}"
+        ), f"Must give a position to each dimension. Shape: {self.shape} Order:{order}"
 
-        new_shape = tuple(self.shape[i] for i in order)
-        new_strides = tuple(self.strides[i] for i in order)
-
-        return TensorData(self._storage, new_shape, new_strides)
+        return TensorData(
+            self._storage,
+            tuple([self.shape[o] for o in order]),
+            tuple([self._strides[o] for o in order]),
+        )
 
     def to_string(self) -> str:
         """Convert to string"""

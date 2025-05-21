@@ -1,3 +1,7 @@
+MiniTorch is a ground-up implementation of PyTorch, a popular deep learning framework used for building and training neural networks. The project was built from scratch as part of the Machine Learning Engineering course at Cornell Tech, taught by Professor Sasha Rush.
+
+**minitorch-fasttensor**: This module improves the performance of tensor operations by adding optimized implementations for both CPU and GPU. Using Numba, it parallelizes core operations like map, zip, reduce, and matrix multiplication on the CPU. It also includes custom CUDA kernels for GPU acceleration. These optimizations make training significantly faster and bring MiniTorch closer to the performance of production-grade deep learning libraries.
+
 # MiniTorch Module 3
 
 <img src="https://minitorch.github.io/minitorch.svg" width="50%">
